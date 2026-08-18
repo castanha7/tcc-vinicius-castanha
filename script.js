@@ -1,14 +1,15 @@
-// DADOS TEMPORÁRIOS DE DEMONSTRAÇÃO (SERÃO SUBSTITUÍDOS PELO FIRESTORE)
+// BANCO DADOS TEMPORÁRIOS DE DEMONSTRAÇÃO
 const mockOpportunities = [
   {
     id: "1",
     title: "Curso de Introdução à Programação Web",
     institution: "Escola de Tecnologia e Futuro",
     category: "cursos",
-    location: "Centro",
+    location: "Centro - Araucária",
+    period: "Início em 10/09/2026",
     status: "ativa",
     link: "https://exemplo.com/curso-programacao",
-    description: "Aprenda HTML, CSS e JavaScript do zero com aulas práticas semanais."
+    description: "Aprenda HTML, CSS e JavaScript do zero com aulas práticas semanais. Curso voltado para iniciantes em busca do primeiro emprego na área de tecnologia."
   },
   {
     id: "2",
@@ -16,9 +17,10 @@ const mockOpportunities = [
     institution: "Coletivo Cultural de Araucária",
     category: "oficinas",
     location: "Parque Cachoeira",
+    period: "Acontece no Sábado das 14h às 17h",
     status: "ativa",
     link: "https://exemplo.com/oficina-fotografia",
-    description: "Oficina prática de fotografia utilizando smartphones. Gratuita e aberta ao público."
+    description: "Oficina prática de fotografia utilizando smartphones. Gratuita e aberta para todas as idades. Traga seu aparelho e aprenda técnicas de enquadramento e iluminação."
   },
   {
     id: "3",
@@ -26,9 +28,10 @@ const mockOpportunities = [
     institution: "ONG Verde Vida",
     category: "projetos",
     location: "Bairro Campina da Barra",
+    period: "Inscrições Abertas",
     status: "ativa",
     link: "https://exemplo.com/horta-comunitaria",
-    description: "Atividades de voluntariado e aprendizado sobre cultivo orgânico e preservação."
+    description: "Atividades de voluntariado e aprendizado prático sobre cultivo orgânico, compostagem e preservação ambiental na comunidade."
   },
   {
     id: "4",
@@ -36,9 +39,10 @@ const mockOpportunities = [
     institution: "Associação Comercial",
     category: "eventos",
     location: "Auditório Central",
+    period: "Dia 25/09/2026",
     status: "ativa",
     link: "https://exemplo.com/feira-inovacao",
-    description: "Palestras, networking e mentoria gratuita para jovens ingressantes no mercado."
+    description: "Palestras, networking e mentoria gratuita para jovens ingressantes no mercado de trabalho. Vagas para entrevistas no local."
   }
 ];
 
@@ -50,7 +54,37 @@ document.addEventListener('DOMContentLoaded', () => {
   renderAdminTable(mockOpportunities);
 });
 
-// RENDERIZAR CARDS
+// SISTEMA DE NAVEGAÇÃO DE TELAS (SPA)
+function navigateTo(viewName, param = null) {
+  // 1. Esconde todas as seções
+  const views = document.querySelectorAll('.view-section');
+  views.forEach(view => view.classList.remove('active'));
+
+  // 2. Remove destaque de todos os botões do menu
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-nav'));
+
+  // 3. Exibe a tela selecionada
+  const targetView = document.getElementById(viewName + 'View');
+  if (targetView) {
+    targetView.classList.add('active');
+  }
+
+  // 4. Marca o botão de navegação ativo se houver
+  const activeBtn = document.querySelector(`.nav-btn[data-target="${viewName}"]`);
+  if (activeBtn) {
+    activeBtn.classList.add('active-nav');
+  }
+
+  // 5. Trata chamadas específicas
+  if (viewName === 'details' && param) {
+    loadOpportunityDetails(param);
+  }
+
+  // Rola a página para o topo ao trocar de tela
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// RENDERIZAR CARDS NA TELA INICIAL
 function renderOpportunities(data) {
   const container = document.getElementById('opportunitiesGrid');
   const countLabel = document.getElementById('resultsCount');
@@ -59,7 +93,7 @@ function renderOpportunities(data) {
   countLabel.textContent = `Exibindo ${data.length} oportunidade(s)`;
 
   if (data.length === 0) {
-    container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Nenhuma oportunidade encontrada.</p>`;
+    container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px 0;">Nenhuma oportunidade encontrada com esses critérios.</p>`;
     return;
   }
 
@@ -71,10 +105,10 @@ function renderOpportunities(data) {
         <span class="card-tag">${item.category}</span>
         <h3 class="card-title">${item.title}</h3>
         <p class="card-institution">📍 ${item.institution} • ${item.location}</p>
-        <p style="font-size: 0.9rem; color: var(--text-muted);">${item.description.substring(0, 80)}...</p>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">${item.description.substring(0, 85)}...</p>
       </div>
       <div class="card-footer">
-        <button class="btn-outline" onclick="openDetails('${item.id}')">Ver Detalhes</button>
+        <button class="btn-outline" onclick="navigateTo('details', '${item.id}')">Ver Detalhes</button>
         <a href="${item.link}" target="_blank" class="btn-primary" style="text-decoration: none; font-size: 0.85rem;">Inscrever-se</a>
       </div>
     `;
@@ -98,12 +132,53 @@ function handleSearch() {
 // FILTRO DE CATEGORIAS
 function filterCategory(category, buttonEl) {
   currentCategory = category;
-  
-  // Atualiza botões ativos
   document.querySelectorAll('.chip').forEach(btn => btn.classList.remove('active'));
   buttonEl.classList.add('active');
-
   handleSearch();
+}
+
+// CARREGAR TELA DE DETALHES
+function loadOpportunityDetails(id) {
+  const item = mockOpportunities.find(o => o.id === id);
+  const container = document.getElementById('detailsCardContent');
+
+  if (!item) {
+    container.innerHTML = `<p>Oportunidade não encontrada.</p>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="details-header">
+      <span class="card-tag">${item.category}</span>
+      <h1 style="margin: 10px 0; font-size: 1.8rem;">${item.title}</h1>
+      <p style="color: var(--text-muted); font-size: 1.1rem;">Oferecido por: <strong>${item.institution}</strong></p>
+    </div>
+
+    <div class="details-meta-grid">
+      <div class="meta-item">
+        <strong>Localização</strong>
+        <span>📍 ${item.location}</span>
+      </div>
+      <div class="meta-item">
+        <strong>Período / Data</strong>
+        <span>📅 ${item.period}</span>
+      </div>
+      <div class="meta-item">
+        <strong>Status</strong>
+        <span class="badge-active">${item.status.toUpperCase()}</span>
+      </div>
+    </div>
+
+    <div class="details-description">
+      <h3 style="margin-bottom: 10px;">Sobre esta oportunidade</h3>
+      <p>${item.description}</p>
+    </div>
+
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+      <a href="${item.link}" target="_blank" class="btn-primary" style="flex: 1; text-align: center; text-decoration: none; padding: 14px; font-size: 1rem;">AcessAR Oportunidade (Link Oficial)</a>
+      <button class="btn-outline" onclick="navigateTo('home')">Voltar</button>
+    </div>
+  `;
 }
 
 // RENDERIZAR TABELA ADMIN
@@ -119,60 +194,47 @@ function renderAdminTable(data) {
       <td>${item.category}</td>
       <td><span class="badge-active">${item.status}</span></td>
       <td>
-        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem;">Editar</button>
-        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: red;">Excluir</button>
+        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="alert('Edição visual temporária. O CRUD real no banco virá na Etapa 6.')">Editar</button>
+        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: red;" onclick="alert('Exclusão visual temporária. O CRUD real no banco virá na Etapa 6.')">Excluir</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-// CONTROLE DE NAVEGAÇÃO DE VIEWS
-function switchView(view) {
-  const heroSection = document.querySelector('.hero-section');
-  const oppSection = document.querySelector('.opportunities-section');
-  const adminView = document.getElementById('adminView');
+// VALIDAÇÃO E ENVIO TEMPORÁRIO DE CADASTRO
+function handleDummyRegister(event) {
+  event.preventDefault();
+  const pass = document.getElementById('regPassword').value;
+  const confirmPass = document.getElementById('regPasswordConfirm').value;
 
-  if (view === 'admin') {
-    heroSection.classList.add('hidden');
-    oppSection.classList.add('hidden');
-    adminView.classList.remove('hidden');
-  } else {
-    heroSection.classList.remove('hidden');
-    oppSection.classList.remove('hidden');
-    adminView.classList.add('hidden');
+  if (pass !== confirmPass) {
+    alert('Erro: As senhas digitadas não coincidem!');
+    return;
   }
+
+  alert('Cadastro simulado com sucesso! Na Etapa 3 este cadastro será salvo via Autenticação real.');
+  navigateTo('login');
 }
 
-// CONTROLE DE MODAIS
+// ENVIOS TEMPORÁRIOS DIVERSOS
+function handleDummyAuth(event, message) {
+  event.preventDefault();
+  alert(message);
+  navigateTo('home');
+}
+
+function handleDummySubmit(event, message) {
+  event.preventDefault();
+  alert(message);
+  closeModal('opportunityFormModal');
+}
+
+// MODAL ADMIN
 function openModal(modalId) {
   document.getElementById(modalId).classList.add('active');
 }
 
 function closeModal(modalId) {
   document.getElementById(modalId).classList.remove('active');
-}
-
-function openDetails(id) {
-  const item = mockOpportunities.find(o => o.id === id);
-  if (!item) return;
-
-  const content = document.getElementById('detailsContent');
-  content.innerHTML = `
-    <span class="card-tag">${item.category}</span>
-    <h2 style="margin: 10px 0;">${item.title}</h2>
-    <p style="color: var(--text-muted); margin-bottom: 15px;"><strong>Instituição:</strong> ${item.institution}</p>
-    <p style="color: var(--text-muted); margin-bottom: 15px;"><strong>Local:</strong> ${item.location}</p>
-    <p style="margin-bottom: 20px;">${item.description}</p>
-    <a href="${item.link}" target="_blank" class="btn-primary btn-full" style="text-align: center; text-decoration: none; display: block;">AcessAR Link Oficial de Inscrição</a>
-  `;
-  openModal('detailsModal');
-}
-
-// TRATAMENTO TEMPORÁRIO DE FORMULÁRIOS
-function handleFormSubmit(event, successMessage) {
-  event.preventDefault();
-  alert(successMessage);
-  // Fecha qualquer modal aberto
-  document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
 }

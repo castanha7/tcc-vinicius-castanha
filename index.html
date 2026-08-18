@@ -11,10 +11,10 @@
 </head>
 <body>
 
-  <!-- HEADER / NAVEGAÇÃO SUPERIOR -->
+  <!-- NAVEGAÇÃO SUPERIOR -->
   <header class="navbar">
     <div class="container nav-container">
-      <a href="#" class="logo" onclick="switchView('home')">
+      <a href="#" class="logo" onclick="navigateTo('home'); return false;">
         <svg class="logo-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="16" cy="16" r="14" fill="#FFF2EE" stroke="#FF8A75" stroke-width="2"/>
           <path d="M16 8V24M8 16H24" stroke="#FF8A75" stroke-width="3" stroke-linecap="round"/>
@@ -24,152 +24,185 @@
       </a>
 
       <nav class="nav-links">
-        <button class="nav-btn" onclick="switchView('home')">Início</button>
-        <button class="nav-btn" onclick="openModal('loginModal')">Entrar</button>
-        <button class="nav-btn btn-primary" onclick="openModal('registerModal')">Cadastrar</button>
-        <button class="nav-btn btn-outline" onclick="switchView('admin')">Painel Admin</button>
+        <button class="nav-btn" data-target="home" onclick="navigateTo('home')">Início</button>
+        <button class="nav-btn" data-target="login" onclick="navigateTo('login')">Entrar</button>
+        <button class="nav-btn btn-primary" data-target="register" onclick="navigateTo('register')">Cadastrar</button>
+        <button class="nav-btn btn-outline" data-target="admin" onclick="navigateTo('admin')">Painel Admin</button>
       </nav>
     </div>
   </header>
 
-  <!-- CONTEÚDO PRINCIPAL (TELA INICIAL) -->
+  <!-- ÁREA DE CONTEÚDO (TELAS DINÂMICAS) -->
   <main class="container" id="mainContent">
 
-    <!-- SEÇÃO HERO / APRESENTAÇÃO -->
-    <section class="hero-section">
-      <h1 class="hero-title">Conectando você às melhores oportunidades</h1>
-      <p class="hero-subtitle">Encontre cursos, oficinas, projetos e atividades gratuitas ou acessíveis perto de você.</p>
-      
-      <!-- BARRAS DE BUSCA -->
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Buscar por palavra-chave, curso ou instituição..." oninput="handleSearch()">
-        <button class="btn-search">Buscar</button>
+    <!-- 1. TELA INICIAL (HOME) -->
+    <section id="homeView" class="view-section active">
+      <div class="hero-section">
+        <h1 class="hero-title">Conectando você às melhores oportunidades</h1>
+        <p class="hero-subtitle">Encontre cursos, oficinas, projetos e atividades gratuitas ou acessíveis perto de você.</p>
+        
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Buscar por palavra-chave, curso ou instituição..." oninput="handleSearch()">
+          <button class="btn-search">Buscar</button>
+        </div>
+
+        <div class="categories-bar" id="categoriesBar">
+          <button class="chip active" onclick="filterCategory('todos', this)">Todas</button>
+          <button class="chip" onclick="filterCategory('cursos', this)">Cursos</button>
+          <button class="chip" onclick="filterCategory('oficinas', this)">Oficinas</button>
+          <button class="chip" onclick="filterCategory('projetos', this)">Projetos Sociais</button>
+          <button class="chip" onclick="filterCategory('eventos', this)">Eventos</button>
+        </div>
       </div>
 
-      <!-- FILTROS POR CATEGORIA -->
-      <div class="categories-bar" id="categoriesBar">
-        <button class="chip active" onclick="filterCategory('todos', this)">Todas</button>
-        <button class="chip" onclick="filterCategory('cursos', this)">Cursos</button>
-        <button class="chip" onclick="filterCategory('oficinas', this)">Oficinas</button>
-        <button class="chip" onclick="filterCategory('projetos', this)">Projetos Sociais</button>
-        <button class="chip" onclick="filterCategory('eventos', this)">Eventos</button>
+      <div class="opportunities-section">
+        <div class="section-header">
+          <h2>Oportunidades em Destaque</h2>
+          <span class="results-count" id="resultsCount">Exibindo oportunidades</span>
+        </div>
+
+        <div class="grid-opportunities" id="opportunitiesGrid">
+          <!-- Renderizado via JavaScript -->
+        </div>
       </div>
     </section>
 
-    <!-- LISTAGEM DE CARDS DE OPORTUNIDADES -->
-    <section class="opportunities-section">
-      <div class="section-header">
-        <h2>Oportunidades em Destaque</h2>
-        <span class="results-count" id="resultsCount">Exibindo oportunidades</span>
-      </div>
+    <!-- 2. TELA DE ENTRAR (LOGIN) -->
+    <section id="loginView" class="view-section hidden">
+      <div class="auth-wrapper">
+        <button class="btn-back" onclick="navigateTo('home')">← Voltar para o início</button>
+        <div class="auth-card">
+          <h2>Entrar no Oportuna+</h2>
+          <p class="auth-subtitle">Acesse sua conta para visualizar detalhes e gerenciar suas preferências.</p>
+          
+          <form onsubmit="handleDummyAuth(event, 'Login temporário realizado! Na Etapa 3 teremos autenticação real.')">
+            <div class="form-group">
+              <label for="loginEmail">E-mail</label>
+              <input type="email" id="loginEmail" required placeholder="seu@email.com">
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Senha</label>
+              <input type="password" id="loginPassword" required placeholder="Sua senha">
+            </div>
+            
+            <div class="auth-options">
+              <a href="#" onclick="alert('Recuperação de senha será implementada na Etapa 3.'); return false;">Esqueci minha senha</a>
+            </div>
 
-      <div class="grid-opportunities" id="opportunitiesGrid">
-        <!-- Renderizado dinamicamente pelo JavaScript -->
+            <button type="submit" class="btn-primary btn-full" style="margin-top: 15px;">Entrar</button>
+          </form>
+
+          <div class="auth-footer">
+            <p>Ainda não tem uma conta? <a href="#" onclick="navigateTo('register'); return false;">Criar conta</a></p>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- PAINEL ADMINISTRATIVO (OCULTO POR PADRÃO) -->
+    <!-- 3. TELA DE CADASTRO -->
+    <section id="registerView" class="view-section hidden">
+      <div class="auth-wrapper">
+        <button class="btn-back" onclick="navigateTo('home')">← Voltar para o início</button>
+        <div class="auth-card">
+          <h2>Criar sua Conta</h2>
+          <p class="auth-subtitle">Cadastre-se para aproveitar todas as oportunidades disponíveis.</p>
+
+          <form onsubmit="handleDummyRegister(event)">
+            <div class="form-group">
+              <label for="regName">Nome Completo *</label>
+              <input type="text" id="regName" required placeholder="Seu nome completo">
+            </div>
+            <div class="form-group">
+              <label for="regEmail">E-mail *</label>
+              <input type="email" id="regEmail" required placeholder="seu@email.com">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="regPassword">Senha *</label>
+                <input type="password" id="regPassword" required placeholder="Mínimo 6 caracteres">
+              </div>
+              <div class="form-group">
+                <label for="regPasswordConfirm">Confirmar Senha *</label>
+                <input type="password" id="regPasswordConfirm" required placeholder="Repita a senha">
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary btn-full" style="margin-top: 15px;">Criar conta</button>
+          </form>
+
+          <div class="auth-footer">
+            <p>Já possui uma conta? <a href="#" onclick="navigateTo('login'); return false;">Fazer login</a></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. TELA DE DETALHES DA OPORTUNIDADE -->
+    <section id="detailsView" class="view-section hidden">
+      <div class="details-wrapper">
+        <button class="btn-back" onclick="navigateTo('home')">← Voltar para as oportunidades</button>
+        
+        <div class="details-card" id="detailsCardContent">
+          <!-- Conteúdo gerado dinamicamente via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. TELA DE PAINEL ADMIN -->
     <section id="adminView" class="view-section hidden">
-      <div class="admin-header">
-        <h2>Painel Administrativo</h2>
-        <button class="btn-primary" onclick="openModal('opportunityFormModal')">+ Nova Oportunidade</button>
-      </div>
-      <p class="section-desc">Gerencie as oportunidades cadastradas no sistema.</p>
-      
-      <div class="table-responsive">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Título</th>
-              <th>Instituição</th>
-              <th>Categoria</th>
-              <th>Status</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="adminTableBody">
-            <!-- Renderizado dinamicamente -->
-          </tbody>
-        </table>
+      <div class="admin-wrapper">
+        <div class="admin-top-bar">
+          <div>
+            <button class="btn-back" onclick="navigateTo('home')">← Voltar ao site público</button>
+            <h2 style="margin-top: 10px;">Painel Administrativo</h2>
+            <p class="section-desc">Gerenciamento central de oportunidades do sistema Oportuna+.</p>
+          </div>
+          <button class="btn-primary" onclick="openModal('opportunityFormModal')">+ Nova Oportunidade</button>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Instituição</th>
+                <th>Categoria</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="adminTableBody">
+              <!-- Renderizado dinamicamente -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
   </main>
 
-  <!-- NAV BOTTOM MOBILE -->
+  <!-- NAVEGAÇÃO INFERIOR PARA CELULARES -->
   <nav class="mobile-nav">
-    <button onclick="switchView('home')">
+    <button onclick="navigateTo('home')">
       <span>🏠</span>
       <small>Início</small>
     </button>
-    <button onclick="openModal('loginModal')">
+    <button onclick="navigateTo('login')">
       <span>🔑</span>
       <small>Entrar</small>
     </button>
-    <button onclick="switchView('admin')">
+    <button onclick="navigateTo('admin')">
       <span>⚙️</span>
       <small>Admin</small>
     </button>
   </nav>
 
-  <!-- MODAL: DETALHES DA OPORTUNIDADE -->
-  <div class="modal" id="detailsModal">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal('detailsModal')">&times;</button>
-      <div id="detailsContent">
-        <!-- Preenchido via JavaScript -->
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: LOGIN -->
-  <div class="modal" id="loginModal">
-    <div class="modal-content modal-sm">
-      <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
-      <h3>Entrar no Oportuna+</h3>
-      <form onsubmit="handleFormSubmit(event, 'Login realizado com sucesso (Visual)!')">
-        <div class="form-group">
-          <label for="loginEmail">E-mail</label>
-          <input type="email" id="loginEmail" required placeholder="seu@email.com">
-        </div>
-        <div class="form-group">
-          <label for="loginPassword">Senha</label>
-          <input type="password" id="loginPassword" required placeholder="******">
-        </div>
-        <button type="submit" class="btn-primary btn-full">Entrar</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: CADASTRO -->
-  <div class="modal" id="registerModal">
-    <div class="modal-content modal-sm">
-      <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
-      <h3>Criar sua Conta</h3>
-      <form onsubmit="handleFormSubmit(event, 'Cadastro realizado com sucesso (Visual)!')">
-        <div class="form-group">
-          <label for="regName">Nome Completo</label>
-          <input type="text" id="regName" required placeholder="Seu nome">
-        </div>
-        <div class="form-group">
-          <label for="regEmail">E-mail</label>
-          <input type="email" id="regEmail" required placeholder="seu@email.com">
-        </div>
-        <div class="form-group">
-          <label for="regPassword">Senha</label>
-          <input type="password" id="regPassword" required placeholder="******">
-        </div>
-        <button type="submit" class="btn-primary btn-full">Cadastrar</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: CADASTRAR/EDITAR OPORTUNIDADE (ADMIN) -->
+  <!-- MODAL DE FORMULÁRIO DO ADMIN (MANTOVE-SE COMO MODAL DENTRO DO ADMIN) -->
   <div class="modal" id="opportunityFormModal">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('opportunityFormModal')">&times;</button>
       <h3 id="formModalTitle">Cadastrar Oportunidade</h3>
-      <form onsubmit="handleFormSubmit(event, 'Oportunidade salva com sucesso (Visual)!')">
+      <form onsubmit="handleDummySubmit(event, 'Formulário do Admin recebido! A gravação no banco ocorrerá nas etapas de CRUD.')">
         <div class="form-group">
           <label>Título da Oportunidade *</label>
           <input type="text" required placeholder="Ex: Curso de Programação Web">
