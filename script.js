@@ -65,6 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
   renderAdminTable(mockOpportunities);
   setupFormListeners();
 
+  // Define o estado inicial exibindo a tela inicial
+  window.navigateTo('home');
+
   // Escuta alterações no estado da autenticação (Persistência Automática)
   onAuthStateChanged(auth, (user) => {
     currentUser = user;
@@ -72,11 +75,46 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// SISTEMA DE NAVEGAÇÃO DE TELAS (SPA) - CONTROLE DIRETO DE VISIBILIDADE
+window.navigateTo = function(viewName, param = null) {
+  const views = document.querySelectorAll('.view-section');
+  
+  // Oculta todas as seções diretamente pelo estilo do elemento
+  views.forEach(view => {
+    view.style.display = 'none';
+    view.classList.remove('active');
+  });
+
+  // Remove destaque visual dos botões de navegação
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-nav'));
+
+  // Exibe a seção alvo
+  const targetView = document.getElementById(viewName + 'View');
+  if (targetView) {
+    targetView.style.display = 'block';
+    targetView.classList.add('active');
+  }
+
+  // Ativa destaque no botão correspondente
+  const activeBtn = document.querySelector(`.nav-btn[data-target="${viewName}"]`);
+  if (activeBtn) {
+    activeBtn.classList.add('active-nav');
+  }
+
+  // Carrega os detalhes do item caso seja a tela de detalhes
+  if (viewName === 'details' && param) {
+    loadOpportunityDetails(param);
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
 // ATUALIZA ELEMENTOS DA INTERFACE CONFORME SESSÃO
 function updateAuthUI(user) {
   const guestNav = document.getElementById('guestNav');
   const userNav = document.getElementById('userNav');
-  const navUserName = document.getElementById('navUserName');
+  // Suporte aos IDs navUsername e navUserName para evitar quebras
+  const navUsername = document.getElementById('navUsername') || document.getElementById('navUserName');
   const mobileNavAuthLabel = document.getElementById('mobileNavAuthLabel');
 
   if (user) {
@@ -85,7 +123,7 @@ function updateAuthUI(user) {
     if (userNav) userNav.classList.remove('hidden');
     
     const displayName = user.displayName || user.email.split('@')[0];
-    if (navUserName) navUserName.textContent = `Olá, ${displayName}`;
+    if (navUsername) navUsername.textContent = `Olá, ${displayName}`;
     if (mobileNavAuthLabel) mobileNavAuthLabel.textContent = 'Minha Conta';
   } else {
     // Visitante (Deslogado)
@@ -107,7 +145,7 @@ function setupFormListeners() {
       const email = document.getElementById('regEmail').value.trim();
       const password = document.getElementById('regPassword').value;
       const confirmPassword = document.getElementById('regPasswordConfirm').value;
-      const submitBtn = document.getElementById('btnRegisterSubmit');
+      const submitBtn = document.getElementById('btnRegisterSubmit') || document.getElementById('btnRegister');
 
       if (password !== confirmPassword) {
         alert('As senhas digitadas não coincidem.');
@@ -120,8 +158,10 @@ function setupFormListeners() {
       }
 
       try {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Cadastrando...';
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Cadastrando...';
+        }
 
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: name });
@@ -132,8 +172,10 @@ function setupFormListeners() {
       } catch (error) {
         alert(translateAuthError(error.code));
       } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Criar conta';
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Criar conta';
+        }
       }
     });
   }
@@ -146,11 +188,14 @@ function setupFormListeners() {
 
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value;
-      const submitBtn = document.getElementById('btnLoginSubmit');
+      // Compatibilidade com ID btnLogin e btnLoginSubmit
+      const submitBtn = document.getElementById('btnLogin') || document.getElementById('btnLoginSubmit');
 
       try {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Entrando...';
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Entrando...';
+        }
 
         await signInWithEmailAndPassword(auth, email, password);
         alert('Login realizado com sucesso!');
@@ -159,8 +204,10 @@ function setupFormListeners() {
       } catch (error) {
         alert(translateAuthError(error.code));
       } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Entrar';
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Entrar';
+        }
       }
     });
   }
@@ -224,34 +271,6 @@ function translateAuthError(code) {
       return 'Erro na autenticação: ' + code;
   }
 }
-
-// SISTEMA DE NAVEGAÇÃO DE TELAS (SPA)
-window.navigateTo = function(viewName, param = null) {
-  const views = document.querySelectorAll('.view-section');
-  views.forEach(view => {
-    view.classList.remove('active');
-    view.classList.remove('hidden');
-  });
-
-  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-nav'));
-
-  const targetView = document.getElementById(viewName + 'View');
-  if (targetView) {
-    targetView.classList.remove('hidden');
-    targetView.classList.add('active');
-  }
-
-  const activeBtn = document.querySelector(`.nav-btn[data-target="${viewName}"]`);
-  if (activeBtn) {
-    activeBtn.classList.add('active-nav');
-  }
-
-  if (viewName === 'details' && param) {
-    loadOpportunityDetails(param);
-  }
-
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-};
 
 // RENDERIZAR CARDS NA TELA INICIAL
 function renderOpportunities(data) {
@@ -378,9 +397,11 @@ function renderAdminTable(data) {
 
 // MODAL CONTROL
 window.openModal = function(modalId) {
-  document.getElementById(modalId).classList.add('active');
+  const modal = document.getElementById(modalId);
+  if (modal) modal.classList.add('active');
 };
 
 window.closeModal = function(modalId) {
-  document.getElementById(modalId).classList.remove('active');
+  const modal = document.getElementById(modalId);
+  if (modal) modal.classList.remove('active');
 };
