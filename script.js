@@ -228,12 +228,16 @@ function translateAuthError(code) {
 // SISTEMA DE NAVEGAÇÃO DE TELAS (SPA)
 window.navigateTo = function(viewName, param = null) {
   const views = document.querySelectorAll('.view-section');
-  views.forEach(view => view.classList.remove('active'));
+  views.forEach(view => {
+    view.classList.remove('active');
+    view.classList.remove('hidden');
+  });
 
   document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-nav'));
 
   const targetView = document.getElementById(viewName + 'View');
   if (targetView) {
+    targetView.classList.remove('hidden');
     targetView.classList.add('active');
   }
 
@@ -344,7 +348,7 @@ function loadOpportunityDetails(id) {
     </div>
 
     <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-      <a href="${item.link}" target="_blank" class="btn-primary" style="flex: 1; text-align: center; text-decoration: none; padding: 14px; font-size: 1rem;">AcessAR Oportunidade (Link Oficial)</a>
+      <a href="${item.link}" target="_blank" class="btn-primary" style="flex: 1; text-align: center; text-decoration: none; padding: 14px; font-size: 1rem;">Acessar Oportunidade (Link Oficial)</a>
       <button class="btn-outline" onclick="window.navigateTo('home')">Voltar</button>
     </div>
   `;
