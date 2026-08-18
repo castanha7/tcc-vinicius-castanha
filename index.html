@@ -1,1 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oportuna+ | Cursos, Oficinas e Oportunidades</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
 
+  <!-- HEADER / NAVEGAÇÃO SUPERIOR -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="#" class="logo" onclick="switchView('home')">
+        <svg class="logo-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="16" cy="16" r="14" fill="#FFF2EE" stroke="#FF8A75" stroke-width="2"/>
+          <path d="M16 8V24M8 16H24" stroke="#FF8A75" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="22" cy="10" r="3" fill="#FF8A75"/>
+        </svg>
+        <span class="logo-text">Oportuna<span class="logo-plus">+</span></span>
+      </a>
+
+      <nav class="nav-links">
+        <button class="nav-btn" onclick="switchView('home')">Início</button>
+        <button class="nav-btn" onclick="openModal('loginModal')">Entrar</button>
+        <button class="nav-btn btn-primary" onclick="openModal('registerModal')">Cadastrar</button>
+        <button class="nav-btn btn-outline" onclick="switchView('admin')">Painel Admin</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL (TELA INICIAL) -->
+  <main class="container" id="mainContent">
+
+    <!-- SEÇÃO HERO / APRESENTAÇÃO -->
+    <section class="hero-section">
+      <h1 class="hero-title">Conectando você às melhores oportunidades</h1>
+      <p class="hero-subtitle">Encontre cursos, oficinas, projetos e atividades gratuitas ou acessíveis perto de você.</p>
+      
+      <!-- BARRAS DE BUSCA -->
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Buscar por palavra-chave, curso ou instituição..." oninput="handleSearch()">
+        <button class="btn-search">Buscar</button>
+      </div>
+
+      <!-- FILTROS POR CATEGORIA -->
+      <div class="categories-bar" id="categoriesBar">
+        <button class="chip active" onclick="filterCategory('todos', this)">Todas</button>
+        <button class="chip" onclick="filterCategory('cursos', this)">Cursos</button>
+        <button class="chip" onclick="filterCategory('oficinas', this)">Oficinas</button>
+        <button class="chip" onclick="filterCategory('projetos', this)">Projetos Sociais</button>
+        <button class="chip" onclick="filterCategory('eventos', this)">Eventos</button>
+      </div>
+    </section>
+
+    <!-- LISTAGEM DE CARDS DE OPORTUNIDADES -->
+    <section class="opportunities-section">
+      <div class="section-header">
+        <h2>Oportunidades em Destaque</h2>
+        <span class="results-count" id="resultsCount">Exibindo oportunidades</span>
+      </div>
+
+      <div class="grid-opportunities" id="opportunitiesGrid">
+        <!-- Renderizado dinamicamente pelo JavaScript -->
+      </div>
+    </section>
+
+    <!-- PAINEL ADMINISTRATIVO (OCULTO POR PADRÃO) -->
+    <section id="adminView" class="view-section hidden">
+      <div class="admin-header">
+        <h2>Painel Administrativo</h2>
+        <button class="btn-primary" onclick="openModal('opportunityFormModal')">+ Nova Oportunidade</button>
+      </div>
+      <p class="section-desc">Gerencie as oportunidades cadastradas no sistema.</p>
+      
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Instituição</th>
+              <th>Categoria</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody">
+            <!-- Renderizado dinamicamente -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- NAV BOTTOM MOBILE -->
+  <nav class="mobile-nav">
+    <button onclick="switchView('home')">
+      <span>🏠</span>
+      <small>Início</small>
+    </button>
+    <button onclick="openModal('loginModal')">
+      <span>🔑</span>
+      <small>Entrar</small>
+    </button>
+    <button onclick="switchView('admin')">
+      <span>⚙️</span>
+      <small>Admin</small>
+    </button>
+  </nav>
+
+  <!-- MODAL: DETALHES DA OPORTUNIDADE -->
+  <div class="modal" id="detailsModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('detailsModal')">&times;</button>
+      <div id="detailsContent">
+        <!-- Preenchido via JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LOGIN -->
+  <div class="modal" id="loginModal">
+    <div class="modal-content modal-sm">
+      <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
+      <h3>Entrar no Oportuna+</h3>
+      <form onsubmit="handleFormSubmit(event, 'Login realizado com sucesso (Visual)!')">
+        <div class="form-group">
+          <label for="loginEmail">E-mail</label>
+          <input type="email" id="loginEmail" required placeholder="seu@email.com">
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Senha</label>
+          <input type="password" id="loginPassword" required placeholder="******">
+        </div>
+        <button type="submit" class="btn-primary btn-full">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CADASTRO -->
+  <div class="modal" id="registerModal">
+    <div class="modal-content modal-sm">
+      <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
+      <h3>Criar sua Conta</h3>
+      <form onsubmit="handleFormSubmit(event, 'Cadastro realizado com sucesso (Visual)!')">
+        <div class="form-group">
+          <label for="regName">Nome Completo</label>
+          <input type="text" id="regName" required placeholder="Seu nome">
+        </div>
+        <div class="form-group">
+          <label for="regEmail">E-mail</label>
+          <input type="email" id="regEmail" required placeholder="seu@email.com">
+        </div>
+        <div class="form-group">
+          <label for="regPassword">Senha</label>
+          <input type="password" id="regPassword" required placeholder="******">
+        </div>
+        <button type="submit" class="btn-primary btn-full">Cadastrar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CADASTRAR/EDITAR OPORTUNIDADE (ADMIN) -->
+  <div class="modal" id="opportunityFormModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('opportunityFormModal')">&times;</button>
+      <h3 id="formModalTitle">Cadastrar Oportunidade</h3>
+      <form onsubmit="handleFormSubmit(event, 'Oportunidade salva com sucesso (Visual)!')">
+        <div class="form-group">
+          <label>Título da Oportunidade *</label>
+          <input type="text" required placeholder="Ex: Curso de Programação Web">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Instituição *</label>
+            <input type="text" required placeholder="Ex: Instituto / Escola">
+          </div>
+          <div class="form-group">
+            <label>Categoria *</label>
+            <select required>
+              <option value="cursos">Cursos</option>
+              <option value="oficinas">Oficinas</option>
+              <option value="projetos">Projetos Sociais</option>
+              <option value="eventos">Eventos</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cidade/Local *</label>
+            <input type="text" required placeholder="Ex: Araucária - Centro">
+          </div>
+          <div class="form-group">
+            <label>Status *</label>
+            <select required>
+              <option value="ativa">Ativa</option>
+              <option value="encerrada">Encerrada</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Link Oficial de Inscrição *</label>
+          <input type="url" required placeholder="https://exemplo.com/inscricao">
+        </div>
+        <div class="form-group">
+          <label>Descrição Detalhada *</label>
+          <textarea rows="4" required placeholder="Descreva os requisitos, horários e detalhes..."></textarea>
+        </div>
+        <button type="submit" class="btn-primary btn-full">Salvar Oportunidade</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- RODAPÉ -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <p>&copy; 2026 Oportuna+. Todos os direitos reservados. Projeto Acadêmico.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
