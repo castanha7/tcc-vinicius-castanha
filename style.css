@@ -64,7 +64,23 @@ body {
 
 .nav-links {
   display: flex;
+  align-items: center;
   gap: 12px;
+}
+
+.nav-auth-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-welcome {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+  padding: 4px 8px;
+  background: var(--primary-light);
+  border-radius: 6px;
 }
 
 /* BUTTONS */
@@ -103,6 +119,17 @@ button {
   padding: 8px 16px;
 }
 
+.btn-logout {
+  border: 1px solid #FFC107;
+  background: #FFF8E1;
+  color: #856404;
+  padding: 8px 14px;
+}
+
+.btn-logout:hover {
+  background: #FFE082;
+}
+
 .btn-full {
   width: 100%;
   padding: 12px;
@@ -130,6 +157,10 @@ button {
 
 .view-section.active {
   display: block;
+}
+
+.hidden {
+  display: none !important;
 }
 
 /* HERO SECTION */
@@ -265,7 +296,7 @@ button {
   border-top: 1px solid var(--border-color);
 }
 
-/* TELA DE AUTENTICAÇÃO (LOGIN E CADASTRO) */
+/* TELA DE AUTENTICAÇÃO */
 .auth-wrapper {
   max-width: 450px;
   margin: 20px auto;
@@ -310,7 +341,7 @@ button {
   color: var(--text-muted);
 }
 
-/* TELA DE DETALHES DA OPORTUNIDADE */
+/* DETAILS VIEW */
 .details-wrapper {
   max-width: 750px;
   margin: 0 auto;
@@ -467,6 +498,10 @@ input:focus, select:focus, textarea:focus {
   position: relative;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+.modal-sm {
+  max-width: 400px;
 }
 
 .modal-close {

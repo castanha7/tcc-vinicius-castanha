@@ -1,3 +1,13 @@
+import { auth } from "./firebase-config.js";
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  sendPasswordResetEmail, 
+  onAuthStateChanged,
+  updateProfile
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
 // BANCO DADOS TEMPORÁRIOS DE DEMONSTRAÇÃO
 const mockOpportunities = [
   {
@@ -47,48 +57,205 @@ const mockOpportunities = [
 ];
 
 let currentCategory = 'todos';
+let currentUser = null;
 
-// INICIALIZAÇÃO
+// INICIALIZAÇÃO & MONITORAMENTO DE SESSÃO REAL DO FIREBASE
 document.addEventListener('DOMContentLoaded', () => {
   renderOpportunities(mockOpportunities);
   renderAdminTable(mockOpportunities);
+  setupFormListeners();
+
+  // Escuta alterações no estado da autenticação (Persistência Automática)
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    updateAuthUI(user);
+  });
 });
 
+// ATUALIZA ELEMENTOS DA INTERFACE CONFORME SESSÃO
+function updateAuthUI(user) {
+  const guestNav = document.getElementById('guestNav');
+  const userNav = document.getElementById('userNav');
+  const navUserName = document.getElementById('navUserName');
+  const mobileNavAuthLabel = document.getElementById('mobileNavAuthLabel');
+
+  if (user) {
+    // Usuário Autenticado
+    if (guestNav) guestNav.classList.add('hidden');
+    if (userNav) userNav.classList.remove('hidden');
+    
+    const displayName = user.displayName || user.email.split('@')[0];
+    if (navUserName) navUserName.textContent = `Olá, ${displayName}`;
+    if (mobileNavAuthLabel) mobileNavAuthLabel.textContent = 'Minha Conta';
+  } else {
+    // Visitante (Deslogado)
+    if (guestNav) guestNav.classList.remove('hidden');
+    if (userNav) userNav.classList.add('hidden');
+    if (mobileNavAuthLabel) mobileNavAuthLabel.textContent = 'Entrar';
+  }
+}
+
+// CONFIGURAÇÃO DOS FORMULÁRIOS DE AUTENTICAÇÃO REAL
+function setupFormListeners() {
+  // CADASTRO REAL
+  const registerForm = document.getElementById('registerForm');
+  if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const name = document.getElementById('regName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const confirmPassword = document.getElementById('regPasswordConfirm').value;
+      const submitBtn = document.getElementById('btnRegisterSubmit');
+
+      if (password !== confirmPassword) {
+        alert('As senhas digitadas não coincidem.');
+        return;
+      }
+
+      if (password.length < 6) {
+        alert('A senha deve ter pelo menos 6 caracteres.');
+        return;
+      }
+
+      try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Cadastrando...';
+
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, { displayName: name });
+
+        alert('Conta criada com sucesso!');
+        registerForm.reset();
+        window.navigateTo('home');
+      } catch (error) {
+        alert(translateAuthError(error.code));
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Criar conta';
+      }
+    });
+  }
+
+  // LOGIN REAL
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const submitBtn = document.getElementById('btnLoginSubmit');
+
+      try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Entrando...';
+
+        await signInWithEmailAndPassword(auth, email, password);
+        alert('Login realizado com sucesso!');
+        loginForm.reset();
+        window.navigateTo('home');
+      } catch (error) {
+        alert(translateAuthError(error.code));
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Entrar';
+      }
+    });
+  }
+
+  // RECUPERAÇÃO DE SENHA REAL
+  const resetForm = document.getElementById('resetPasswordForm');
+  if (resetForm) {
+    resetForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('resetEmail').value.trim();
+
+      try {
+        await sendPasswordResetEmail(auth, email);
+        alert('E-mail de redefinição enviado! Verifique sua caixa de entrada.');
+        resetForm.reset();
+        window.closeModal('resetPasswordModal');
+      } catch (error) {
+        alert(translateAuthError(error.code));
+      }
+    });
+  }
+
+  // FORMULÁRIO DUMMY ADMIN
+  const dummyAdminForm = document.getElementById('dummyAdminForm');
+  if (dummyAdminForm) {
+    dummyAdminForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      alert('A gravação real no banco ocorrerá nas etapas de CRUD.');
+      window.closeModal('opportunityFormModal');
+    });
+  }
+}
+
+// LOGOUT REAL
+window.handleLogout = async function() {
+  try {
+    await signOut(auth);
+    alert('Sessão encerrada com sucesso.');
+    window.navigateTo('home');
+  } catch (error) {
+    alert('Erro ao sair da conta: ' + error.message);
+  }
+};
+
+// TRADUTOR DE ERROS DO FIREBASE AUTHENTICATION
+function translateAuthError(code) {
+  switch (code) {
+    case 'auth/email-already-in-use':
+      return 'Este e-mail já está em uso por outra conta.';
+    case 'auth/invalid-email':
+      return 'O e-mail informado é inválido.';
+    case 'auth/weak-password':
+      return 'A senha deve conter pelo menos 6 caracteres.';
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+      return 'E-mail ou senha incorretos.';
+    case 'auth/too-many-requests':
+      return 'Acesso temporariamente bloqueado devido a muitas tentativas inválidas. Tente novamente mais tarde.';
+    default:
+      return 'Erro na autenticação: ' + code;
+  }
+}
+
 // SISTEMA DE NAVEGAÇÃO DE TELAS (SPA)
-function navigateTo(viewName, param = null) {
-  // 1. Esconde todas as seções
+window.navigateTo = function(viewName, param = null) {
   const views = document.querySelectorAll('.view-section');
   views.forEach(view => view.classList.remove('active'));
 
-  // 2. Remove destaque de todos os botões do menu
   document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-nav'));
 
-  // 3. Exibe a tela selecionada
   const targetView = document.getElementById(viewName + 'View');
   if (targetView) {
     targetView.classList.add('active');
   }
 
-  // 4. Marca o botão de navegação ativo se houver
   const activeBtn = document.querySelector(`.nav-btn[data-target="${viewName}"]`);
   if (activeBtn) {
     activeBtn.classList.add('active-nav');
   }
 
-  // 5. Trata chamadas específicas
   if (viewName === 'details' && param) {
     loadOpportunityDetails(param);
   }
 
-  // Rola a página para o topo ao trocar de tela
   window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+};
 
 // RENDERIZAR CARDS NA TELA INICIAL
 function renderOpportunities(data) {
   const container = document.getElementById('opportunitiesGrid');
   const countLabel = document.getElementById('resultsCount');
   
+  if (!container || !countLabel) return;
+
   container.innerHTML = '';
   countLabel.textContent = `Exibindo ${data.length} oportunidade(s)`;
 
@@ -108,7 +275,7 @@ function renderOpportunities(data) {
         <p style="font-size: 0.9rem; color: var(--text-muted);">${item.description.substring(0, 85)}...</p>
       </div>
       <div class="card-footer">
-        <button class="btn-outline" onclick="navigateTo('details', '${item.id}')">Ver Detalhes</button>
+        <button class="btn-outline" onclick="window.navigateTo('details', '${item.id}')">Ver Detalhes</button>
         <a href="${item.link}" target="_blank" class="btn-primary" style="text-decoration: none; font-size: 0.85rem;">Inscrever-se</a>
       </div>
     `;
@@ -117,7 +284,7 @@ function renderOpportunities(data) {
 }
 
 // BUSCA VISUAL
-function handleSearch() {
+window.handleSearch = function() {
   const term = document.getElementById('searchInput').value.toLowerCase();
   const filtered = mockOpportunities.filter(item => {
     const matchesCategory = currentCategory === 'todos' || item.category === currentCategory;
@@ -127,20 +294,22 @@ function handleSearch() {
     return matchesCategory && matchesSearch;
   });
   renderOpportunities(filtered);
-}
+};
 
 // FILTRO DE CATEGORIAS
-function filterCategory(category, buttonEl) {
+window.filterCategory = function(category, buttonEl) {
   currentCategory = category;
   document.querySelectorAll('.chip').forEach(btn => btn.classList.remove('active'));
   buttonEl.classList.add('active');
-  handleSearch();
-}
+  window.handleSearch();
+};
 
 // CARREGAR TELA DE DETALHES
 function loadOpportunityDetails(id) {
   const item = mockOpportunities.find(o => o.id === id);
   const container = document.getElementById('detailsCardContent');
+
+  if (!container) return;
 
   if (!item) {
     container.innerHTML = `<p>Oportunidade não encontrada.</p>`;
@@ -176,7 +345,7 @@ function loadOpportunityDetails(id) {
 
     <div style="display: flex; gap: 15px; flex-wrap: wrap;">
       <a href="${item.link}" target="_blank" class="btn-primary" style="flex: 1; text-align: center; text-decoration: none; padding: 14px; font-size: 1rem;">AcessAR Oportunidade (Link Oficial)</a>
-      <button class="btn-outline" onclick="navigateTo('home')">Voltar</button>
+      <button class="btn-outline" onclick="window.navigateTo('home')">Voltar</button>
     </div>
   `;
 }
@@ -184,8 +353,9 @@ function loadOpportunityDetails(id) {
 // RENDERIZAR TABELA ADMIN
 function renderAdminTable(data) {
   const tbody = document.getElementById('adminTableBody');
-  tbody.innerHTML = '';
+  if (!tbody) return;
 
+  tbody.innerHTML = '';
   data.forEach(item => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -194,47 +364,19 @@ function renderAdminTable(data) {
       <td>${item.category}</td>
       <td><span class="badge-active">${item.status}</span></td>
       <td>
-        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="alert('Edição visual temporária. O CRUD real no banco virá na Etapa 6.')">Editar</button>
-        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: red;" onclick="alert('Exclusão visual temporária. O CRUD real no banco virá na Etapa 6.')">Excluir</button>
+        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="alert('Edição temporária. O CRUD real no banco virá na Etapa 6.')">Editar</button>
+        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: red;" onclick="alert('Exclusão temporária. O CRUD real no banco virá na Etapa 6.')">Excluir</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-// VALIDAÇÃO E ENVIO TEMPORÁRIO DE CADASTRO
-function handleDummyRegister(event) {
-  event.preventDefault();
-  const pass = document.getElementById('regPassword').value;
-  const confirmPass = document.getElementById('regPasswordConfirm').value;
-
-  if (pass !== confirmPass) {
-    alert('Erro: As senhas digitadas não coincidem!');
-    return;
-  }
-
-  alert('Cadastro simulado com sucesso! Na Etapa 3 este cadastro será salvo via Autenticação real.');
-  navigateTo('login');
-}
-
-// ENVIOS TEMPORÁRIOS DIVERSOS
-function handleDummyAuth(event, message) {
-  event.preventDefault();
-  alert(message);
-  navigateTo('home');
-}
-
-function handleDummySubmit(event, message) {
-  event.preventDefault();
-  alert(message);
-  closeModal('opportunityFormModal');
-}
-
-// MODAL ADMIN
-function openModal(modalId) {
+// MODAL CONTROL
+window.openModal = function(modalId) {
   document.getElementById(modalId).classList.add('active');
-}
+};
 
-function closeModal(modalId) {
+window.closeModal = function(modalId) {
   document.getElementById(modalId).classList.remove('active');
-}
+};

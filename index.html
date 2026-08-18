@@ -14,7 +14,7 @@
   <!-- NAVEGAÇÃO SUPERIOR -->
   <header class="navbar">
     <div class="container nav-container">
-      <a href="#" class="logo" onclick="navigateTo('home'); return false;">
+      <a href="#" class="logo" onclick="window.navigateTo('home'); return false;">
         <svg class="logo-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="16" cy="16" r="14" fill="#FFF2EE" stroke="#FF8A75" stroke-width="2"/>
           <path d="M16 8V24M8 16H24" stroke="#FF8A75" stroke-width="3" stroke-linecap="round"/>
@@ -24,10 +24,20 @@
       </a>
 
       <nav class="nav-links">
-        <button class="nav-btn" data-target="home" onclick="navigateTo('home')">Início</button>
-        <button class="nav-btn" data-target="login" onclick="navigateTo('login')">Entrar</button>
-        <button class="nav-btn btn-primary" data-target="register" onclick="navigateTo('register')">Cadastrar</button>
-        <button class="nav-btn btn-outline" data-target="admin" onclick="navigateTo('admin')">Painel Admin</button>
+        <button class="nav-btn" data-target="home" onclick="window.navigateTo('home')">Início</button>
+        
+        <!-- BOTOES VISITANTE -->
+        <div id="guestNav" class="nav-auth-group">
+          <button class="nav-btn" data-target="login" onclick="window.navigateTo('login')">Entrar</button>
+          <button class="nav-btn btn-primary" data-target="register" onclick="window.navigateTo('register')">Cadastrar</button>
+        </div>
+
+        <!-- PERFIL USUÁRIO AUTENTICADO -->
+        <div id="userNav" class="nav-auth-group hidden">
+          <span class="user-welcome" id="navUserName">Olá, Usuário</span>
+          <button class="nav-btn btn-outline" data-target="admin" onclick="window.navigateTo('admin')">Painel Admin</button>
+          <button class="nav-btn btn-logout" onclick="window.handleLogout()">Sair</button>
+        </div>
       </nav>
     </div>
   </header>
@@ -42,16 +52,16 @@
         <p class="hero-subtitle">Encontre cursos, oficinas, projetos e atividades gratuitas ou acessíveis perto de você.</p>
         
         <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Buscar por palavra-chave, curso ou instituição..." oninput="handleSearch()">
+          <input type="text" id="searchInput" placeholder="Buscar por palavra-chave, curso ou instituição..." oninput="window.handleSearch()">
           <button class="btn-search">Buscar</button>
         </div>
 
         <div class="categories-bar" id="categoriesBar">
-          <button class="chip active" onclick="filterCategory('todos', this)">Todas</button>
-          <button class="chip" onclick="filterCategory('cursos', this)">Cursos</button>
-          <button class="chip" onclick="filterCategory('oficinas', this)">Oficinas</button>
-          <button class="chip" onclick="filterCategory('projetos', this)">Projetos Sociais</button>
-          <button class="chip" onclick="filterCategory('eventos', this)">Eventos</button>
+          <button class="chip active" onclick="window.filterCategory('todos', this)">Todas</button>
+          <button class="chip" onclick="window.filterCategory('cursos', this)">Cursos</button>
+          <button class="chip" onclick="window.filterCategory('oficinas', this)">Oficinas</button>
+          <button class="chip" onclick="window.filterCategory('projetos', this)">Projetos Sociais</button>
+          <button class="chip" onclick="window.filterCategory('eventos', this)">Eventos</button>
         </div>
       </div>
 
@@ -70,12 +80,12 @@
     <!-- 2. TELA DE ENTRAR (LOGIN) -->
     <section id="loginView" class="view-section hidden">
       <div class="auth-wrapper">
-        <button class="btn-back" onclick="navigateTo('home')">← Voltar para o início</button>
+        <button class="btn-back" onclick="window.navigateTo('home')">← Voltar para o início</button>
         <div class="auth-card">
           <h2>Entrar no Oportuna+</h2>
           <p class="auth-subtitle">Acesse sua conta para visualizar detalhes e gerenciar suas preferências.</p>
           
-          <form onsubmit="handleDummyAuth(event, 'Login temporário realizado! Na Etapa 3 teremos autenticação real.')">
+          <form id="loginForm">
             <div class="form-group">
               <label for="loginEmail">E-mail</label>
               <input type="email" id="loginEmail" required placeholder="seu@email.com">
@@ -86,14 +96,14 @@
             </div>
             
             <div class="auth-options">
-              <a href="#" onclick="alert('Recuperação de senha será implementada na Etapa 3.'); return false;">Esqueci minha senha</a>
+              <a href="#" onclick="window.openModal('resetPasswordModal'); return false;">Esqueci minha senha</a>
             </div>
 
-            <button type="submit" class="btn-primary btn-full" style="margin-top: 15px;">Entrar</button>
+            <button type="submit" class="btn-primary btn-full" style="margin-top: 15px;" id="btnLoginSubmit">Entrar</button>
           </form>
 
           <div class="auth-footer">
-            <p>Ainda não tem uma conta? <a href="#" onclick="navigateTo('register'); return false;">Criar conta</a></p>
+            <p>Ainda não tem uma conta? <a href="#" onclick="window.navigateTo('register'); return false;">Criar conta</a></p>
           </div>
         </div>
       </div>
@@ -102,12 +112,12 @@
     <!-- 3. TELA DE CADASTRO -->
     <section id="registerView" class="view-section hidden">
       <div class="auth-wrapper">
-        <button class="btn-back" onclick="navigateTo('home')">← Voltar para o início</button>
+        <button class="btn-back" onclick="window.navigateTo('home')">← Voltar para o início</button>
         <div class="auth-card">
           <h2>Criar sua Conta</h2>
           <p class="auth-subtitle">Cadastre-se para aproveitar todas as oportunidades disponíveis.</p>
 
-          <form onsubmit="handleDummyRegister(event)">
+          <form id="registerForm">
             <div class="form-group">
               <label for="regName">Nome Completo *</label>
               <input type="text" id="regName" required placeholder="Seu nome completo">
@@ -127,11 +137,11 @@
               </div>
             </div>
 
-            <button type="submit" class="btn-primary btn-full" style="margin-top: 15px;">Criar conta</button>
+            <button type="submit" class="btn-primary btn-full" style="margin-top: 15px;" id="btnRegisterSubmit">Criar conta</button>
           </form>
 
           <div class="auth-footer">
-            <p>Já possui uma conta? <a href="#" onclick="navigateTo('login'); return false;">Fazer login</a></p>
+            <p>Já possui uma conta? <a href="#" onclick="window.navigateTo('login'); return false;">Fazer login</a></p>
           </div>
         </div>
       </div>
@@ -140,7 +150,7 @@
     <!-- 4. TELA DE DETALHES DA OPORTUNIDADE -->
     <section id="detailsView" class="view-section hidden">
       <div class="details-wrapper">
-        <button class="btn-back" onclick="navigateTo('home')">← Voltar para as oportunidades</button>
+        <button class="btn-back" onclick="window.navigateTo('home')">← Voltar para as oportunidades</button>
         
         <div class="details-card" id="detailsCardContent">
           <!-- Conteúdo gerado dinamicamente via JS -->
@@ -153,11 +163,11 @@
       <div class="admin-wrapper">
         <div class="admin-top-bar">
           <div>
-            <button class="btn-back" onclick="navigateTo('home')">← Voltar ao site público</button>
+            <button class="btn-back" onclick="window.navigateTo('home')">← Voltar ao site público</button>
             <h2 style="margin-top: 10px;">Painel Administrativo</h2>
             <p class="section-desc">Gerenciamento central de oportunidades do sistema Oportuna+.</p>
           </div>
-          <button class="btn-primary" onclick="openModal('opportunityFormModal')">+ Nova Oportunidade</button>
+          <button class="btn-primary" onclick="window.openModal('opportunityFormModal')">+ Nova Oportunidade</button>
         </div>
         
         <div class="table-responsive">
@@ -183,26 +193,42 @@
 
   <!-- NAVEGAÇÃO INFERIOR PARA CELULARES -->
   <nav class="mobile-nav">
-    <button onclick="navigateTo('home')">
+    <button onclick="window.navigateTo('home')">
       <span>🏠</span>
       <small>Início</small>
     </button>
-    <button onclick="navigateTo('login')">
+    <button id="mobileNavAuthBtn" onclick="window.navigateTo('login')">
       <span>🔑</span>
-      <small>Entrar</small>
+      <small id="mobileNavAuthLabel">Entrar</small>
     </button>
-    <button onclick="navigateTo('admin')">
+    <button onclick="window.navigateTo('admin')">
       <span>⚙️</span>
       <small>Admin</small>
     </button>
   </nav>
 
-  <!-- MODAL DE FORMULÁRIO DO ADMIN (MANTOVE-SE COMO MODAL DENTRO DO ADMIN) -->
+  <!-- MODAL: RECUPERAÇÃO DE SENHA -->
+  <div class="modal" id="resetPasswordModal">
+    <div class="modal-content modal-sm">
+      <button class="modal-close" onclick="window.closeModal('resetPasswordModal')">&times;</button>
+      <h3>Recuperar Senha</h3>
+      <p class="auth-subtitle">Informe seu e-mail para receber as instruções de redefinição.</p>
+      <form id="resetPasswordForm">
+        <div class="form-group">
+          <label for="resetEmail">E-mail Cadastrado</label>
+          <input type="email" id="resetEmail" required placeholder="seu@email.com">
+        </div>
+        <button type="submit" class="btn-primary btn-full">Enviar E-mail de Recuperação</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE FORMULÁRIO DO ADMIN -->
   <div class="modal" id="opportunityFormModal">
     <div class="modal-content">
-      <button class="modal-close" onclick="closeModal('opportunityFormModal')">&times;</button>
+      <button class="modal-close" onclick="window.closeModal('opportunityFormModal')">&times;</button>
       <h3 id="formModalTitle">Cadastrar Oportunidade</h3>
-      <form onsubmit="handleDummySubmit(event, 'Formulário do Admin recebido! A gravação no banco ocorrerá nas etapas de CRUD.')">
+      <form id="dummyAdminForm">
         <div class="form-group">
           <label>Título da Oportunidade *</label>
           <input type="text" required placeholder="Ex: Curso de Programação Web">
@@ -255,6 +281,7 @@
     </div>
   </footer>
 
-  <script src="script.js"></script>
+  <!-- SCRIPT PRINCIPAL COMO MÓDULO -->
+  <script type="module" src="script.js"></script>
 </body>
 </html>
