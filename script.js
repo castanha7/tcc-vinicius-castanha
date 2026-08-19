@@ -1,4 +1,4 @@
-import { auth } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -7,66 +7,23 @@ import {
   onAuthStateChanged,
   updateProfile
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { 
+  collection, 
+  getDocs 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// BANCO DADOS TEMPORÁRIOS DE DEMONSTRAÇÃO
-const mockOpportunities = [
-  {
-    id: "1",
-    title: "Curso de Introdução à Programação Web",
-    institution: "Escola de Tecnologia e Futuro",
-    category: "cursos",
-    location: "Centro - Araucária",
-    period: "Início em 10/09/2026",
-    status: "ativa",
-    link: "https://exemplo.com/curso-programacao",
-    description: "Aprenda HTML, CSS e JavaScript do zero com aulas práticas semanais. Curso voltado para iniciantes em busca do primeiro emprego na área de tecnologia."
-  },
-  {
-    id: "2",
-    title: "Oficina de Fotografia Urbana",
-    institution: "Coletivo Cultural de Araucária",
-    category: "oficinas",
-    location: "Parque Cachoeira",
-    period: "Acontece no Sábado das 14h às 17h",
-    status: "ativa",
-    link: "https://exemplo.com/oficina-fotografia",
-    description: "Oficina prática de fotografia utilizando smartphones. Gratuita e aberta para todas as idades. Traga seu aparelho e aprenda técnicas de enquadramento e iluminação."
-  },
-  {
-    id: "3",
-    title: "Projeto Horta Comunitária e Sustentabilidade",
-    institution: "ONG Verde Vida",
-    category: "projetos",
-    location: "Bairro Campina da Barra",
-    period: "Inscrições Abertas",
-    status: "ativa",
-    link: "https://exemplo.com/horta-comunitaria",
-    description: "Atividades de voluntariado e aprendizado prático sobre cultivo orgânico, compostagem e preservação ambiental na comunidade."
-  },
-  {
-    id: "4",
-    title: "Feira de Inovação e Carreiras 2026",
-    institution: "Associação Comercial",
-    category: "eventos",
-    location: "Auditório Central",
-    period: "Dia 25/09/2026",
-    status: "ativa",
-    link: "https://exemplo.com/feira-inovacao",
-    description: "Palestras, networking e mentoria gratuita para jovens ingressantes no mercado de trabalho. Vagas para entrevistas no local."
-  }
-];
-
+// ARMAZENAMENTO EM MEMÓRIA DAS OPORTUNIDADES VINDAS DO FIRESTORE
+let opportunitiesData = [];
 let currentCategory = 'todos';
 let currentUser = null;
 
-// INICIALIZAÇÃO & MONITORAMENTO DE SESSÃO REAL DO FIREBASE
-document.addEventListener('DOMContentLoaded', () => {
-  renderOpportunities(mockOpportunities);
-  renderAdminTable(mockOpportunities);
+// INICIALIZAÇÃO & MONITORAMENTO DE SESSÃO E BANCO DE DADOS
+document.addEventListener('DOMContentLoaded', async () => {
   setupFormListeners();
-
-  // Define o estado inicial exibindo a tela inicial
   window.navigateTo('home');
+
+  // Carrega os dados reais do Firestore
+  await fetchOpportunities();
 
   // Escuta alterações no estado da autenticação (Persistência Automática)
   onAuthStateChanged(auth, (user) => {
@@ -75,33 +32,61 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// BUSCA DADOS DA COLEÇÃO 'opportunities' NO FIRESTORE
+async function fetchOpportunities() {
+  const container = document.getElementById('opportunitiesGrid');
+  const countLabel = document.getElementById('resultsCount');
+
+  if (container) {
+    container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px 0;">Carregando oportunidades...</p>`;
+  }
+
+  try {
+    const querySnapshot = await getDocs(collection(db, "opportunities"));
+    opportunitiesData = [];
+
+    querySnapshot.forEach((doc) => {
+      opportunitiesData.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+
+    renderOpportunities(opportunitiesData);
+    renderAdminTable(opportunitiesData);
+  } catch (error) {
+    console.error("Erro ao buscar dados do Firestore:", error);
+    if (container) {
+      container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px 0;">Não foi possível carregar as oportunidades no momento.</p>`;
+    }
+    if (countLabel) {
+      countLabel.textContent = "Exibindo 0 oportunidade(s)";
+    }
+  }
+}
+
 // SISTEMA DE NAVEGAÇÃO DE TELAS (SPA) - CONTROLE DIRETO DE VISIBILIDADE
 window.navigateTo = function(viewName, param = null) {
   const views = document.querySelectorAll('.view-section');
   
-  // Oculta todas as seções diretamente pelo estilo do elemento
   views.forEach(view => {
     view.style.display = 'none';
     view.classList.remove('active');
   });
 
-  // Remove destaque visual dos botões de navegação
   document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-nav'));
 
-  // Exibe a seção alvo
   const targetView = document.getElementById(viewName + 'View');
   if (targetView) {
     targetView.style.display = 'block';
     targetView.classList.add('active');
   }
 
-  // Ativa destaque no botão correspondente
   const activeBtn = document.querySelector(`.nav-btn[data-target="${viewName}"]`);
   if (activeBtn) {
     activeBtn.classList.add('active-nav');
   }
 
-  // Carrega os detalhes do item caso seja a tela de detalhes
   if (viewName === 'details' && param) {
     loadOpportunityDetails(param);
   }
@@ -113,12 +98,10 @@ window.navigateTo = function(viewName, param = null) {
 function updateAuthUI(user) {
   const guestNav = document.getElementById('guestNav');
   const userNav = document.getElementById('userNav');
-  // Suporte aos IDs navUsername e navUserName para evitar quebras
   const navUsername = document.getElementById('navUsername') || document.getElementById('navUserName');
   const mobileNavAuthLabel = document.getElementById('mobileNavAuthLabel');
 
   if (user) {
-    // Usuário Autenticado
     if (guestNav) guestNav.classList.add('hidden');
     if (userNav) userNav.classList.remove('hidden');
     
@@ -126,7 +109,6 @@ function updateAuthUI(user) {
     if (navUsername) navUsername.textContent = `Olá, ${displayName}`;
     if (mobileNavAuthLabel) mobileNavAuthLabel.textContent = 'Minha Conta';
   } else {
-    // Visitante (Deslogado)
     if (guestNav) guestNav.classList.remove('hidden');
     if (userNav) userNav.classList.add('hidden');
     if (mobileNavAuthLabel) mobileNavAuthLabel.textContent = 'Entrar';
@@ -135,7 +117,6 @@ function updateAuthUI(user) {
 
 // CONFIGURAÇÃO DOS FORMULÁRIOS DE AUTENTICAÇÃO REAL
 function setupFormListeners() {
-  // CADASTRO REAL
   const registerForm = document.getElementById('registerForm');
   if (registerForm) {
     registerForm.addEventListener('submit', async (e) => {
@@ -180,7 +161,6 @@ function setupFormListeners() {
     });
   }
 
-  // LOGIN REAL
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
@@ -188,7 +168,6 @@ function setupFormListeners() {
 
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value;
-      // Compatibilidade com ID btnLogin e btnLoginSubmit
       const submitBtn = document.getElementById('btnLogin') || document.getElementById('btnLoginSubmit');
 
       try {
@@ -212,7 +191,6 @@ function setupFormListeners() {
     });
   }
 
-  // RECUPERAÇÃO DE SENHA REAL
   const resetForm = document.getElementById('resetPasswordForm');
   if (resetForm) {
     resetForm.addEventListener('submit', async (e) => {
@@ -230,7 +208,6 @@ function setupFormListeners() {
     });
   }
 
-  // FORMULÁRIO DUMMY ADMIN
   const dummyAdminForm = document.getElementById('dummyAdminForm');
   if (dummyAdminForm) {
     dummyAdminForm.addEventListener('submit', (e) => {
@@ -292,14 +269,14 @@ function renderOpportunities(data) {
     card.className = 'card';
     card.innerHTML = `
       <div>
-        <span class="card-tag">${item.category}</span>
-        <h3 class="card-title">${item.title}</h3>
-        <p class="card-institution">📍 ${item.institution} • ${item.location}</p>
-        <p style="font-size: 0.9rem; color: var(--text-muted);">${item.description.substring(0, 85)}...</p>
+        <span class="card-tag">${item.category || 'geral'}</span>
+        <h3 class="card-title">${item.title || 'Sem título'}</h3>
+        <p class="card-institution">📍 ${item.institution || 'Instituição não informada'} • ${item.location || 'Local não informado'}</p>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">${(item.description || '').substring(0, 85)}...</p>
       </div>
       <div class="card-footer">
         <button class="btn-outline" onclick="window.navigateTo('details', '${item.id}')">Ver Detalhes</button>
-        <a href="${item.link}" target="_blank" class="btn-primary" style="text-decoration: none; font-size: 0.85rem;">Inscrever-se</a>
+        <a href="${item.link || '#'}" target="_blank" class="btn-primary" style="text-decoration: none; font-size: 0.85rem;">Inscrever-se</a>
       </div>
     `;
     container.appendChild(card);
@@ -309,11 +286,11 @@ function renderOpportunities(data) {
 // BUSCA VISUAL
 window.handleSearch = function() {
   const term = document.getElementById('searchInput').value.toLowerCase();
-  const filtered = mockOpportunities.filter(item => {
+  const filtered = opportunitiesData.filter(item => {
     const matchesCategory = currentCategory === 'todos' || item.category === currentCategory;
-    const matchesSearch = item.title.toLowerCase().includes(term) || 
-                          item.institution.toLowerCase().includes(term) || 
-                          item.description.toLowerCase().includes(term);
+    const matchesSearch = (item.title || '').toLowerCase().includes(term) || 
+                          (item.institution || '').toLowerCase().includes(term) || 
+                          (item.description || '').toLowerCase().includes(term);
     return matchesCategory && matchesSearch;
   });
   renderOpportunities(filtered);
@@ -329,45 +306,45 @@ window.filterCategory = function(category, buttonEl) {
 
 // CARREGAR TELA DE DETALHES
 function loadOpportunityDetails(id) {
-  const item = mockOpportunities.find(o => o.id === id);
+  const item = opportunitiesData.find(o => o.id === id);
   const container = document.getElementById('detailsCardContent');
 
   if (!container) return;
 
   if (!item) {
-    container.innerHTML = `<p>Oportunidade não encontrada.</p>`;
+    container.innerHTML = `<p style="padding: 20px; text-align: center;">Oportunidade não encontrada.</p>`;
     return;
   }
 
   container.innerHTML = `
     <div class="details-header">
-      <span class="card-tag">${item.category}</span>
-      <h1 style="margin: 10px 0; font-size: 1.8rem;">${item.title}</h1>
-      <p style="color: var(--text-muted); font-size: 1.1rem;">Oferecido por: <strong>${item.institution}</strong></p>
+      <span class="card-tag">${item.category || 'geral'}</span>
+      <h1 style="margin: 10px 0; font-size: 1.8rem;">${item.title || 'Sem título'}</h1>
+      <p style="color: var(--text-muted); font-size: 1.1rem;">Oferecido por: <strong>${item.institution || 'Não informado'}</strong></p>
     </div>
 
     <div class="details-meta-grid">
       <div class="meta-item">
         <strong>Localização</strong>
-        <span>📍 ${item.location}</span>
+        <span>📍 ${item.location || 'Não informada'}</span>
       </div>
       <div class="meta-item">
         <strong>Período / Data</strong>
-        <span>📅 ${item.period}</span>
+        <span>📅 ${item.period || 'Não informado'}</span>
       </div>
       <div class="meta-item">
         <strong>Status</strong>
-        <span class="badge-active">${item.status.toUpperCase()}</span>
+        <span class="badge-active">${(item.status || 'Ativa').toUpperCase()}</span>
       </div>
     </div>
 
     <div class="details-description">
       <h3 style="margin-bottom: 10px;">Sobre esta oportunidade</h3>
-      <p>${item.description}</p>
+      <p>${item.description || 'Sem descrição detalhada.'}</p>
     </div>
 
     <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-      <a href="${item.link}" target="_blank" class="btn-primary" style="flex: 1; text-align: center; text-decoration: none; padding: 14px; font-size: 1rem;">Acessar Oportunidade (Link Oficial)</a>
+      <a href="${item.link || '#'}" target="_blank" class="btn-primary" style="flex: 1; text-align: center; text-decoration: none; padding: 14px; font-size: 1rem;">Acessar Oportunidade (Link Oficial)</a>
       <button class="btn-outline" onclick="window.navigateTo('home')">Voltar</button>
     </div>
   `;
@@ -382,13 +359,13 @@ function renderAdminTable(data) {
   data.forEach(item => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong>${item.title}</strong></td>
-      <td>${item.institution}</td>
-      <td>${item.category}</td>
-      <td><span class="badge-active">${item.status}</span></td>
+      <td><strong>${item.title || 'Sem título'}</strong></td>
+      <td>${item.institution || 'Não informada'}</td>
+      <td>${item.category || 'geral'}</td>
+      <td><span class="badge-active">${item.status || 'ativa'}</span></td>
       <td>
-        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="alert('Edição temporária. O CRUD real no banco virá na Etapa 6.')">Editar</button>
-        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: red;" onclick="alert('Exclusão temporária. O CRUD real no banco virá na Etapa 6.')">Excluir</button>
+        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="alert('Edição temporária. O CRUD real no banco virá na próxima etapa.')">Editar</button>
+        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: red;" onclick="alert('Exclusão temporária. O CRUD real no banco virá na próxima etapa.')">Excluir</button>
       </td>
     `;
     tbody.appendChild(tr);
