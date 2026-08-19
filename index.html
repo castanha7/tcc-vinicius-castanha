@@ -167,7 +167,7 @@
             <h2 style="margin-top: 10px;">Painel Administrativo</h2>
             <p class="section-desc">Gerenciamento central de oportunidades do sistema Oportuna+.</p>
           </div>
-          <button class="btn-primary" onclick="window.openModal('opportunityFormModal')">+ Nova Oportunidade</button>
+          <button class="btn-primary" onclick="window.openNewOpportunityModal()">+ Nova Oportunidade</button>
         </div>
         
         <div class="table-responsive">
@@ -223,24 +223,28 @@
     </div>
   </div>
 
-  <!-- MODAL DE FORMULÁRIO DO ADMIN -->
+  <!-- MODAL DE FORMULÁRIO DO ADMIN (CADASTRAR / EDITAR) -->
   <div class="modal" id="opportunityFormModal">
     <div class="modal-content">
       <button class="modal-close" onclick="window.closeModal('opportunityFormModal')">&times;</button>
       <h3 id="formModalTitle">Cadastrar Oportunidade</h3>
-      <form id="dummyAdminForm">
+      
+      <form id="opportunityForm">
+        <input type="hidden" id="oppId">
+
         <div class="form-group">
-          <label>Título da Oportunidade *</label>
-          <input type="text" required placeholder="Ex: Curso de Programação Web">
+          <label for="oppTitle">Título da Oportunidade *</label>
+          <input type="text" id="oppTitle" required placeholder="Ex: Curso de Programação Web">
         </div>
+
         <div class="form-row">
           <div class="form-group">
-            <label>Instituição *</label>
-            <input type="text" required placeholder="Ex: Instituto / Escola">
+            <label for="oppInstitution">Instituição *</label>
+            <input type="text" id="oppInstitution" required placeholder="Ex: Instituto / Escola">
           </div>
           <div class="form-group">
-            <label>Categoria *</label>
-            <select required>
+            <label for="oppCategory">Categoria *</label>
+            <select id="oppCategory" required>
               <option value="cursos">Cursos</option>
               <option value="oficinas">Oficinas</option>
               <option value="projetos">Projetos Sociais</option>
@@ -248,28 +252,38 @@
             </select>
           </div>
         </div>
+
         <div class="form-row">
           <div class="form-group">
-            <label>Cidade/Local *</label>
-            <input type="text" required placeholder="Ex: Araucária - Centro">
+            <label for="oppLocation">Cidade/Local *</label>
+            <input type="text" id="oppLocation" required placeholder="Ex: Araucária - Centro">
           </div>
           <div class="form-group">
-            <label>Status *</label>
-            <select required>
+            <label for="oppPeriod">Período / Data *</label>
+            <input type="text" id="oppPeriod" required placeholder="Ex: Início em 10/09/2026">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="oppStatus">Status *</label>
+            <select id="oppStatus" required>
               <option value="ativa">Ativa</option>
               <option value="encerrada">Encerrada</option>
             </select>
           </div>
+          <div class="form-group">
+            <label for="oppLink">Link Oficial de Inscrição *</label>
+            <input type="url" id="oppLink" required placeholder="https://exemplo.com/inscricao">
+          </div>
         </div>
+
         <div class="form-group">
-          <label>Link Oficial de Inscrição *</label>
-          <input type="url" required placeholder="https://exemplo.com/inscricao">
+          <label for="oppDescription">Descrição Detalhada *</label>
+          <textarea id="oppDescription" rows="4" required placeholder="Descreva os requisitos, horários e detalhes..."></textarea>
         </div>
-        <div class="form-group">
-          <label>Descrição Detalhada *</label>
-          <textarea rows="4" required placeholder="Descreva os requisitos, horários e detalhes..."></textarea>
-        </div>
-        <button type="submit" class="btn-primary btn-full">Salvar Oportunidade</button>
+
+        <button type="submit" class="btn-primary btn-full" id="btnSaveOpportunity">Salvar Oportunidade</button>
       </form>
     </div>
   </div>

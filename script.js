@@ -9,7 +9,11 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { 
   collection, 
-  getDocs 
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ARMAZENAMENTO EM MEMÓRIA DAS OPORTUNIDADES VINDAS DO FIRESTORE
@@ -45,10 +49,10 @@ async function fetchOpportunities() {
     const querySnapshot = await getDocs(collection(db, "opportunities"));
     opportunitiesData = [];
 
-    querySnapshot.forEach((doc) => {
+    querySnapshot.forEach((docSnap) => {
       opportunitiesData.push({
-        id: doc.id,
-        ...doc.data()
+        id: docSnap.id,
+        ...docSnap.data()
       });
     });
 
@@ -115,8 +119,9 @@ function updateAuthUI(user) {
   }
 }
 
-// CONFIGURAÇÃO DOS FORMULÁRIOS DE AUTENTICAÇÃO REAL
+// CONFIGURAÇÃO DOS FORMULÁRIOS DE AUTENTICAÇÃO E CRUD
 function setupFormListeners() {
+  // CADASTRO DE USUÁRIO
   const registerForm = document.getElementById('registerForm');
   if (registerForm) {
     registerForm.addEventListener('submit', async (e) => {
@@ -161,6 +166,7 @@ function setupFormListeners() {
     });
   }
 
+  // LOGIN DE USUÁRIO
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
@@ -191,6 +197,7 @@ function setupFormListeners() {
     });
   }
 
+  // RECUPERAÇÃO DE SENHA
   const resetForm = document.getElementById('resetPasswordForm');
   if (resetForm) {
     resetForm.addEventListener('submit', async (e) => {
@@ -208,17 +215,68 @@ function setupFormListeners() {
     });
   }
 
-  const dummyAdminForm = document.getElementById('dummyAdminForm');
-  if (dummyAdminForm) {
-    dummyAdminForm.addEventListener('submit', (e) => {
+  // FORMULÁRIO DO ADMIN: CRIAR E EDITAR OPORTUNIDADES NO FIRESTORE
+  const oppForm = document.getElementById('opportunityForm');
+  if (oppForm) {
+    oppForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      alert('A gravação real no banco ocorrerá nas etapas de CRUD.');
-      window.closeModal('opportunityFormModal');
+
+      const id = document.getElementById('oppId').value;
+      const title = document.getElementById('oppTitle').value.trim();
+      const institution = document.getElementById('oppInstitution').value.trim();
+      const category = document.getElementById('oppCategory').value;
+      const location = document.getElementById('oppLocation').value.trim();
+      const period = document.getElementById('oppPeriod').value.trim();
+      const status = document.getElementById('oppStatus').value;
+      const link = document.getElementById('oppLink').value.trim();
+      const description = document.getElementById('oppDescription').value.trim();
+      const submitBtn = document.getElementById('btnSaveOpportunity');
+
+      const payload = {
+        title,
+        institution,
+        category,
+        location,
+        period,
+        status,
+        link,
+        description
+      };
+
+      try {
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Salvando...';
+        }
+
+        if (id) {
+          // Atualizar registro existente
+          await updateDoc(doc(db, "opportunities", id), payload);
+          alert('Oportunidade atualizada com sucesso!');
+        } else {
+          // Criar novo registro
+          await addDoc(collection(db, "opportunities"), payload);
+          alert('Oportunidade cadastrada com sucesso!');
+        }
+
+        oppForm.reset();
+        document.getElementById('oppId').value = '';
+        window.closeModal('opportunityFormModal');
+        await fetchOpportunities();
+      } catch (error) {
+        console.error("Erro ao salvar oportunidade no Firestore:", error);
+        alert('Erro ao salvar: Verifique suas permissões de administrador.');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Salvar Oportunidade';
+        }
+      }
     });
   }
 }
 
-// LOGOUT REAL
+// LOGOUT
 window.handleLogout = async function() {
   try {
     await signOut(auth);
@@ -350,12 +408,18 @@ function loadOpportunityDetails(id) {
   `;
 }
 
-// RENDERIZAR TABELA ADMIN
+// RENDERIZAR TABELA ADMIN COM AÇÕES DE EDITAR E EXCLUIR
 function renderAdminTable(data) {
   const tbody = document.getElementById('adminTableBody');
   if (!tbody) return;
 
   tbody.innerHTML = '';
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhuma oportunidade cadastrada.</td></tr>`;
+    return;
+  }
+
   data.forEach(item => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -364,13 +428,64 @@ function renderAdminTable(data) {
       <td>${item.category || 'geral'}</td>
       <td><span class="badge-active">${item.status || 'ativa'}</span></td>
       <td>
-        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="alert('Edição temporária. O CRUD real no banco virá na próxima etapa.')">Editar</button>
-        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: red;" onclick="alert('Exclusão temporária. O CRUD real no banco virá na próxima etapa.')">Excluir</button>
+        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="window.editOpportunity('${item.id}')">Editar</button>
+        <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: red;" onclick="window.deleteOpportunity('${item.id}')">Excluir</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
 }
+
+// ABRIR MODAL PARA NOVA OPORTUNIDADE (LIMPA O FORMULÁRIO)
+window.openNewOpportunityModal = function() {
+  const form = document.getElementById('opportunityForm');
+  if (form) form.reset();
+  
+  const hiddenId = document.getElementById('oppId');
+  if (hiddenId) hiddenId.value = '';
+
+  const titleEl = document.getElementById('formModalTitle');
+  if (titleEl) titleEl.textContent = 'Cadastrar Oportunidade';
+
+  window.openModal('opportunityFormModal');
+};
+
+// PREENCHER FORMULÁRIO PARA EDIÇÃO
+window.editOpportunity = function(id) {
+  const item = opportunitiesData.find(o => o.id === id);
+  if (!item) return;
+
+  document.getElementById('oppId').value = item.id;
+  document.getElementById('oppTitle').value = item.title || '';
+  document.getElementById('oppInstitution').value = item.institution || '';
+  document.getElementById('oppCategory').value = item.category || 'cursos';
+  document.getElementById('oppLocation').value = item.location || '';
+  document.getElementById('oppPeriod').value = item.period || '';
+  document.getElementById('oppStatus').value = item.status || 'ativa';
+  document.getElementById('oppLink').value = item.link || '';
+  document.getElementById('oppDescription').value = item.description || '';
+
+  const titleEl = document.getElementById('formModalTitle');
+  if (titleEl) titleEl.textContent = 'Editar Oportunidade';
+
+  window.openModal('opportunityFormModal');
+};
+
+// EXCLUIR REGISTRO DO FIRESTORE
+window.deleteOpportunity = async function(id) {
+  if (!confirm('Tem certeza de que deseja excluir esta oportunidade? Esta ação não poderá ser desfeita.')) {
+    return;
+  }
+
+  try {
+    await deleteDoc(doc(db, "opportunities", id));
+    alert('Oportunidade excluída com sucesso!');
+    await fetchOpportunities();
+  } catch (error) {
+    console.error("Erro ao excluir oportunidade:", error);
+    alert('Erro ao excluir: Verifique suas permissões de administrador.');
+  }
+};
 
 // MODAL CONTROL
 window.openModal = function(modalId) {
