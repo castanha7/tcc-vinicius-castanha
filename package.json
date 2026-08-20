@@ -1,0 +1,25 @@
+{
+  "name": "tcc-vinicius-castanha",
+  "version": "1.0.0",
+  "description": "",
+  "main": "firebase-config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/castanha7/tcc-vinicius-castanha.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/castanha7/tcc-vinicius-castanha/issues"
+  },
+  "homepage": "https://github.com/castanha7/tcc-vinicius-castanha#readme",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "firebase-admin": "^14.3.0"
+  }
+}
